@@ -46,22 +46,24 @@ logInfoMessage "Updated AMI in the Launch Template"
 
 function UPDATE_ASG_DESIRE_SIZE() {
   local ASG_NAME="$1"
-  local percentage="$2"
+  local Instance_Capacity_In_Percentage="$2"
+  local REGION="$3"
   local current_capacity
   local original_capacity
-  current_capacity=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$ASG_NAME" --query "AutoScalingGroups[0].DesiredCapacity" --output text)
+  percentage=$(printf "%.0f" "$Instance_Capacity_In_Percentage")
+  current_capacity=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$ASG_NAME" --query "AutoScalingGroups[0].DesiredCapacity" --output text --region "$REGION")
   original_capacity="$current_capacity"
   new_capacity=$((current_capacity + (current_capacity * percentage / 100)))
-  echo "Updating desired capacity for $ASG_NAME from $current_capacity to $new_capacity"
-  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --desired-capacity "$new_capacity"
+  logInfoMessage "Updating desired capacity for $ASG_NAME from $current_capacity to $new_capacity"
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --desired-capacity "$new_capacity" --region "$REGION"
   sleep 40
-  echo "Restoring desired capacity for $ASG_NAME to $original_capacity"
-  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --desired-capacity "$original_capacity"
+  logInfoMessage "Restoring desired capacity for $ASG_NAME to $original_capacity"
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$ASG_NAME" --desired-capacity "$original_capacity"  --region "$REGION"
 }
 
 logInfoMessage "Updating the intance capacity in percentage in the Auto Scaling Group"
 
-UPDATE_ASG_DESIRE_SIZE $ASG_NAME $Instance_Capacity_In_Percentage
+UPDATE_ASG_DESIRE_SIZE $ASG_NAME $Instance_Capacity_In_Percentage $REGION
 
 
 logInfoMessage "Congratulations Auto Scaling Group is successfully updated with percentage of the instances :- $Instance_Capacity_In_Percentage% !!!!"
